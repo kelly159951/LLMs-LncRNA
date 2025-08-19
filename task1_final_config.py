@@ -11,20 +11,20 @@ fasta_file = './dataset/task1_'+ch+'.fasta'
 label_file = './dataset/task1_'+ch+'_label.csv'
 
 batch_size=8
-#四分类mlp模型
-input_dim = 640  # 每个RNA序列的编码大小
+# 4-class MLP model
+input_dim = 640  # RNA sequence encoding size
 hidden_dim_1 = 160
 hidden_dim_2 = 32
-output_dim = 4  # 标签类别数
+output_dim = 4  # Number of label categories
 drop_out_1=0.1
 drop_out_2=0.1
 
-#训练参数
-lr_m1=0.0001 #mlp的学习率, 第一阶段
-lr_m2=0.00001 #mlp的学习率，第二阶段
-lr_fm=0.000005 #rna_fm的学习率
-num_epochs_1 = 6 #只训练mlp
-num_epochs_2 = 10  #同时训练rna_fm和mlp
+#Training parameters
+lr_m1=0.0001 # MLP learning rate, stage 1
+lr_m2=0.00001 # MLP learning rate, stage 2
+lr_fm=0.000005 # RNA FM learning rate
+num_epochs_1 = 6 # Train MLP only
+num_epochs_2 = 10  # Train both RNA FM and MLP
 
 mlp_model_save_path = './model/task1_mlp_model_'+num+'.pth'
 rna_fm_save_path = './model/task1_fm_model_'+num+'.pth'

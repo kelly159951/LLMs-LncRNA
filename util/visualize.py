@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 def plot_training_results(losses, val_acc, test_acc, save_path):
     epochs = range(1, len(losses) + 1)
 
-    # 绘制训练损失
+    # Plot training loss
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
     plt.plot(epochs, losses, label='Training Loss')
@@ -11,7 +11,7 @@ def plot_training_results(losses, val_acc, test_acc, save_path):
     plt.title('Training Loss over Epochs')
     plt.legend()
 
-    # 绘制验证和测试准确率
+    # Plot validation and test accuracy
     plt.subplot(1, 2, 2)
     plt.plot(epochs, val_acc, label='Validation Accuracy', color='blue')
     plt.plot(epochs, test_acc, label='Test Accuracy', color='green')
@@ -20,7 +20,7 @@ def plot_training_results(losses, val_acc, test_acc, save_path):
     plt.title('Validation and Test Accuracy over Epochs')
     plt.legend()
 
-    # 保存图像
+    # Save image
     plt.tight_layout()
     plt.savefig(save_path)
     plt.show()

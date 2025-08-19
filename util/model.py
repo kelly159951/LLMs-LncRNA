@@ -16,7 +16,7 @@ class task1_Model(nn.Module):
             nn.GELU(),
             nn.Linear(320, 4)
         )
-        if attn_pool:#可选的注意力池化层
+        if attn_pool:#Optional attention pooling layer
             self.pool_query = nn.Parameter(torch.randn(1, 1, 640))
             self.pooler = nn.MultiheadAttention(
                 640, 8, dropout=dropout, batch_first=True
@@ -53,7 +53,7 @@ class task2_Model(nn.Module):
             nn.GELU(),
             nn.Linear(64, 2)
         )
-        if attn_pool:#可选的注意力池化层
+        if attn_pool:#Optional attention pooling layer
             self.rna_pool_query = nn.Parameter(torch.randn(1, 1, 640))
             self.pro_pool_query = nn.Parameter(torch.randn(1, 1, 1280))
             self.rna_pooler = nn.MultiheadAttention(
@@ -88,7 +88,7 @@ class task2_Model(nn.Module):
             feat=torch.cat([rna_feat, pro_feat], dim=-1)
             return self.mlp(feat)
         else:
-            #打印rna_hidden和pro_hidden的shape
+            #Print shape of rna_hidden and pro_hidden
             # print(rna_hidden.shape)
             # print(pro_hidden.shape)
             hidden = torch.cat([rna_hidden[:,0], pro_hidden[:,0]], dim=-1)  # [batch, seq_len+2, 1920]
@@ -99,7 +99,7 @@ class baseline_task1_Model(nn.Module):
         ae_ehiddim_1 = 45
         ae_ehiddim_2 = 32
         ae_ehiddim_3 = 16
-        # embedded feature维度
+        # Embedded feature dimension
         dim_embed = 100
 
         self.encoder = nn.Sequential(
@@ -166,7 +166,7 @@ class baseline_task1_Model(nn.Module):
         encoded = x
         x = self.fc2(x)
         x = self.unflatten(x)
-        x = x.squeeze(-1)  # 移除最后一维，使输入变为 3D
+        x = x.squeeze(-1)  # Remove the last dimension to make input 3D
         x = self.decoder(x)
         return x, encoded
     
@@ -181,7 +181,7 @@ class baseline_task2_Model(nn.Module):
         ae_rna_ehiddim_1 = 45
         ae_rna_ehiddim_2 = 32
         ae_rna_ehiddim_3 = 16
-        # embedded feature维度
+        # Embedded feature dimension
         dim_rna_embed = 100
         #rna autoencoder
         self.rna_encoder = nn.Sequential(
@@ -252,8 +252,8 @@ class baseline_task2_Model(nn.Module):
         )
 
         self.pro_flatten = nn.Flatten()
-        self.pro_fc1 = nn.Linear(ae_pro_ehiddim_3 * 24, dim_pro_embed)  # 输入维度修正为 320
-        self.pro_fc2 = nn.Linear(dim_pro_embed, ae_pro_ehiddim_3 * 24)  # 输出维度修正为 320
+        self.pro_fc1 = nn.Linear(ae_pro_ehiddim_3 * 24, dim_pro_embed)  # Input dimension corrected to 320
+        self.pro_fc2 = nn.Linear(dim_pro_embed, ae_pro_ehiddim_3 * 24)  # Output dimension corrected to 320
         self.pro_unflatten = nn.Unflatten(1, (ae_pro_ehiddim_3, 24, 1))
 
         self.pro_decoder = nn.Sequential(
@@ -298,7 +298,7 @@ class baseline_task2_Model(nn.Module):
         encoded = x
         x = self.rna_fc2(x)
         x = self.rna_unflatten(x)
-        x = x.squeeze(-1)  # 移除最后一维，使输入变为 3D
+        x = x.squeeze(-1)  # Remove the last dimension to make input 3D
         x = self.rna_decoder(x)
         return x, encoded
     def pro_hidden(self, x):
@@ -314,7 +314,7 @@ class baseline_task2_Model(nn.Module):
         # print(x.shape)
         x = self.pro_unflatten(x)
         # print(x.shape)
-        x = x.squeeze(-1)  # 移除最后一维，使输入变为 3D
+        x = x.squeeze(-1)  # Remove the last dimension to make input 3D
         # print(x.shape)
         x = self.pro_decoder(x)
         # print(x.shape)
@@ -344,12 +344,12 @@ def create_model(args):
 
     if args.checkpoint != '':
         weight = torch.load(args.checkpoint, map_location=args.device)
-        # 去掉 model 中每一层的 'module.' 前缀（如果有）
+        # Remove 'module.' prefix from each layer in model (if any)
         new_state_dict = {}
         for k, v in weight.items():
-            # 如果键名以 'module.' 开头，则去掉前缀
+            # If key name starts with 'module.', remove prefix
             if k.startswith('module.'):
-                new_state_dict[k[7:]] = v  # 删除 'module.' 前缀
+                new_state_dict[k[7:]] = v  # Remove 'module.' prefix
             else:
                 new_state_dict[k] = v
         model.load_state_dict(new_state_dict)

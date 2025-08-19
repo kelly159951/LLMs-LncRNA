@@ -348,7 +348,7 @@ class task2_Runner():
                 rna_strs = [d[0] for d in data]
                 pro_strs = [d[1] for d in data]
 
-                # 使用对应的 converter 进行转换
+                # Use corresponding converter for conversion
                 _, _, rna_tokens = self.rna_batch_converter([(None, rna_str) for rna_str in rna_strs])
                 _, _, pro_tokens = self.pro_batch_converter([(None, pro_str) for pro_str in pro_strs])
 
@@ -476,19 +476,19 @@ class task2_Runner():
                         json.dump(output_data, f, indent=4)
 
 def col_fn(batch):
-    # 假设每个元素是一个元组，长度可以变化。处理前两列是数据，最后一列是标签的情况。
+    # Assume each element is a tuple with variable length. Handle the case where the first two columns are data and the last column is the label.
     
     if len(batch[0]) == 3:
-        # 如果每个元素有3列，第一列和第二列为数据，第三列为标签
-        data1 = torch.FloatTensor(np.array([x[0] for x in batch]))  # 提取第一列作为数据
-        data2 = torch.FloatTensor(np.array([x[1] for x in batch]))  # 提取第二列作为数据
-        labels = torch.LongTensor([x[2] for x in batch])  # 提取第三列作为标签
-        return data1.unsqueeze(dim=1), data2.unsqueeze(dim=1), labels  # 返回数据1、数据2和标签
+        # If each element has 3 columns, the first and second columns are data, the third column is the label
+        data1 = torch.FloatTensor(np.array([x[0] for x in batch]))  # Extract the first column as data
+        data2 = torch.FloatTensor(np.array([x[1] for x in batch]))  # Extract the second column as data
+        labels = torch.LongTensor([x[2] for x in batch])  # Extract the third column as labels
+        return data1.unsqueeze(dim=1), data2.unsqueeze(dim=1), labels  # Return data1, data2 and labels
     elif len(batch[0]) == 2:
-        # 如果每个元素有2列，第一列为数据，第二列为标签
-        data = torch.FloatTensor(np.array([x[0] for x in batch]))  # 提取第一列作为数据
-        labels = torch.LongTensor([x[1] for x in batch])  # 提取第二列作为标签
-        return data.unsqueeze(dim=1), labels  # 返回数据和标签
+        # If each element has 2 columns, the first column is data, the second column is the label
+        data = torch.FloatTensor(np.array([x[0] for x in batch]))  # Extract the first column as data
+        labels = torch.LongTensor([x[1] for x in batch])  # Extract the second column as labels
+        return data.unsqueeze(dim=1), labels  # Return data and labels
 
 class base_Runner():
     def __init__(self, args):
@@ -525,29 +525,29 @@ class base_Runner():
                 rnainputs, labels = data
                 rnainputs = rnainputs.to(self.device)
                 labels = labels.to(self.device)
-                self.optimizer.zero_grad()  # 清空梯度
+                self.optimizer.zero_grad()  # Clear gradients
 
-                pred, rna_output = self.model(rnainputs)  # 前向传播
+                pred, rna_output = self.model(rnainputs)  # Forward propagation
 
-                loss_ae = self.criterion_ae(rna_output, rnainputs)  # 损失函数
+                loss_ae = self.criterion_ae(rna_output, rnainputs)  # Loss function
                 loss_cls = self.criterion_cls(pred, labels)
                 loss = self.alpha * loss_ae + (1 - self.alpha) * loss_cls
             else:
-                rnainputs, proinputs, labels = data  # 解包 data
+                rnainputs, proinputs, labels = data  # Unpack data
                 rnainputs = rnainputs.to(self.device)
                 proinputs = proinputs.to(self.device)
                 labels = labels.to(self.device)
                 self.optimizer.zero_grad()
 
-                pred, rna_output, pro_output = self.model(rnainputs, proinputs)  # 前向传播
+                pred, rna_output, pro_output = self.model(rnainputs, proinputs)  # Forward propagation
 
-                loss_rna_ae = self.criterion_ae(rna_output, rnainputs)  # 损失函数
+                loss_rna_ae = self.criterion_ae(rna_output, rnainputs)  # Loss function
                 loss_pro_ae = self.criterion_ae(pro_output, proinputs)
                 loss_cls = self.criterion_cls(pred, labels)
                 loss = self.alpha * (loss_rna_ae + loss_pro_ae) + (1 - self.alpha) * loss_cls
                 
-            loss.backward()  # 反向传播
-            self.optimizer.step()  # 更新模型参数
+            loss.backward()  # Backward propagation
+            self.optimizer.step()  # Update model parameters
 
             losses.append(loss.item())
             all_results.append(normalize_softmax(pred.softmax(dim=-1))) #make sure the sum of each row is 1

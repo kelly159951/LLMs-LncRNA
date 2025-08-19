@@ -1,4 +1,4 @@
-name: /home/sunyuhan/anaconda3/envs/RNA-FM
+name: /home/sunyuhan/anaconda3/envs/RNA-PRO
 channels:
   - pytorch
   - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge

@@ -12,24 +12,24 @@ def transform_dna_rna(seq):
     mapper = {'A': 'U', 'T': 'A', 'C': "G", 'G': 'C'}
     seq = [mapper[x] for x in seq]
     return ''.join(seq)
-# 加载并拼接特征
+# Load and concatenate features
 def load_and_concatenate_features(file_paths):
     features = []
     for file in file_paths:
         df = pd.read_csv(file)
-        feature_array = df.values[:, 2:]  # 取编码
+        feature_array = df.values[:, 2:]  # Extract encoding
         features.append(feature_array)
         # print(features)
         names=df.values[:, 1]
     return names,np.hstack(features)
 
-# 保存特征和名称到CSV文件
+# Save features and names to CSV file
 def save_to_csv(names, features, file_path):
     df = pd.DataFrame(features)
     df.insert(0, 'Seqname', names)
     df.to_csv(file_path, index=False)
 
-# 保存特征和名称到NPY文件
+# Save features and names to NPY file
 def save_to_npy(names, features, file_path):
     combined_data = np.column_stack((names, features))
     np.save(file_path, combined_data)
@@ -49,9 +49,9 @@ def baseline_task1_encode_rna(rna_seq_file,label_file,resultpath,final):
         'Pseudo protein related (1D).csv', 'Guanine-cytosine related (1D).csv', 'Nucleotide related (1D).csv', 'EIIP based spectrum (1D).csv',
     ]
     file_paths = [base_path + file_name for file_name in file_names]
-    # 加载并拼接特征
+    # Load and concatenate features
     names,features = load_and_concatenate_features(file_paths)
-    #确保path存在
+    # Ensure path exists
     dir_path = os.path.dirname(final)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path, exist_ok=True)
@@ -85,13 +85,13 @@ def baseline_task2_encode_rna(input_files,output_files,Afastapaths,Bfastapaths,r
                 
                 converted_data.append(columns)  
 
-        # 将转换后的数据写入新的 CSV 文件
+        # Write converted data to new CSV file
         with open(output_file, 'w', newline='') as csvfile:
             csv_writer = csv.writer(csvfile)
             csv_writer.writerow(['proSeqname', 'Seqname', 'Label'])
             csv_writer.writerows(converted_data)
 
-        print(f"转换完成，数据已保存到 {output_file}")
+        print(f"Conversion completed, data saved to {output_file}")
 
         RNAcoding_01.protein_coding(Bfastapath, output_file, profinal)
 
@@ -110,9 +110,9 @@ def baseline_task2_encode_rna(input_files,output_files,Afastapaths,Bfastapaths,r
             'Pseudo protein related (1D).csv', 'Guanine-cytosine related (1D).csv', 'Nucleotide related (1D).csv', 'EIIP based spectrum (1D).csv',
         ]
         file_paths = [base_path + file_name for file_name in file_names]
-        # 加载并拼接特征
+        # Load and concatenate features
         names,features = load_and_concatenate_features(file_paths)
-        #确保path存在
+        # Ensure path exists
         dir_path = os.path.dirname(final)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path, exist_ok=True)
@@ -328,7 +328,7 @@ class RNADataset(torch.utils.data.Dataset):
         super(RNADataset, self).__init__()
         self.data = data
         random.shuffle(self.data)
-        if(len(data)>0 and len(data[0])==2): #对于task2不需要进行balance，也就不需要进行统计
+        if(len(data)>0 and len(data[0])==2): # For task2, no balance needed, so no statistics needed
             self.label2idx = {}
             for idx, (x, _) in enumerate(self.data):
                 if x not in self.label2idx:

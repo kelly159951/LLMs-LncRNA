@@ -25,7 +25,7 @@ class DistilledRNAModel(nn.Module):
         return nn.ModuleList(keep_layers)
 
     def load_original_weights(self, original):
-        """手动复制所有可训练参数"""
+        """Manually copy all trainable parameters"""
         self.embed_tokens.load_state_dict(original.embed_tokens.state_dict())
         self.embed_positions.load_state_dict(original.embed_positions.state_dict())
         self.emb_layer_norm_before.load_state_dict(original.emb_layer_norm_before.state_dict())
@@ -34,7 +34,7 @@ class DistilledRNAModel(nn.Module):
         self.lm_head.load_state_dict(original.lm_head.state_dict())
 
     def forward(self, input_ids, positions=None):
-        """前向传播"""
+        """Forward propagation"""
         x = self.embed_tokens(input_ids)
         if positions is not None:
             pos_emb = self.embed_positions(positions)
@@ -49,7 +49,7 @@ class DistilledRNAModel(nn.Module):
         return lm_logits
 
 def distillation_loss(student_output, teacher_output, T=2.0, alpha=0.7):
-    """蒸馏损失函数"""
+    """Distillation loss function"""
     soft_target_loss = nn.KLDivLoss(reduction='batchmean')(
         F.log_softmax(student_output / T, dim=-1),
         F.softmax(teacher_output / T, dim=-1)
@@ -58,7 +58,7 @@ def distillation_loss(student_output, teacher_output, T=2.0, alpha=0.7):
     return alpha * soft_target_loss + (1. - alpha) * hard_target_loss
 
 class RNADataset(Dataset):
-    """RNA 数据集"""
+    """RNA dataset"""
     def __init__(self, sequences):
         self.sequences = sequences
 
@@ -69,7 +69,7 @@ class RNADataset(Dataset):
         return torch.tensor(self.sequences[idx], dtype=torch.long)
 
 def train_distillation(student_model, teacher_model, dataloader, optimizer, logger, num_epochs=10, device='cuda'):
-    """蒸馏训练过程"""
+    """Distillation training process"""
     teacher_model.eval()
     student_model.train()
     best_loss = 1e9
@@ -94,24 +94,24 @@ def train_distillation(student_model, teacher_model, dataloader, optimizer, logg
 
                 pbar.set_postfix(loss=total_loss / (pbar.n + 1))
 
-        # 记录蒸馏训练指标
+        # Record distillation training metrics
         logger.log_distillation(
             epoch=epoch + 1,
             train_loss=total_loss / len(dataloader),
-            lr=optimizer.param_groups[0]['lr'],  # 当前学习率
+            lr=optimizer.param_groups[0]['lr'],  # Current learning rate
             best_loss=best_loss
         )
 
 def distillate(data_file, logger, num_epochs=50, batch_size=64, lr=1e-4, device='cuda'):
 
-    # 初始化模型
+    # Initialize model
     print('Initializing models')
     rna_model, alphabet = fm.pretrained.rna_fm_t12()
     batch_converter = alphabet.get_batch_converter()
     teacher_model = rna_model.to(device)
     student_model = DistilledRNAModel(rna_model).to(device)
 
-    # 准备数据
+    # Prepare data
     print('Loading data')
     rna_raw_sequences = list(SeqIO.parse(data_file, "fasta"))
     rna_sequences = []
@@ -122,16 +122,16 @@ def distillate(data_file, logger, num_epochs=50, batch_size=64, lr=1e-4, device=
     _, _, rna_tokens = batch_converter([(None, seq) for seq in rna_sequences])
     print(rna_tokens)
 
-    # 数据集和数据加载器
+    # Dataset and data loader
     dataset = RNADataset(rna_tokens)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-    # 设置优化器
+    # Set optimizer
     optimizer = optim.Adam(student_model.parameters(), lr=lr)
 
-    # 训练
+    # Training
     print('Starting distillation training')
     train_distillation(student_model, teacher_model, dataloader, optimizer, logger, num_epochs=num_epochs, device=device)
 
-    # 返回训练好的学生模型
+    # Return the trained student model
     return student_model

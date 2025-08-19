@@ -121,7 +121,7 @@ class Model(torch.nn.Module):
             torch.nn.GELU(),
             torch.nn.Linear(320, 4)
         )
-        if attn_pool:#可选的注意力池化层
+        if attn_pool:#Optional attention pooling layer
             self.pool_query = torch.nn.Parameter(torch.randn(1, 1, 640))
             self.pooler = torch.nn.MultiheadAttention(
                 640, 8, dropout=dropout, batch_first=True
@@ -357,7 +357,7 @@ if __name__ == '__main__':
 def plot_training_results(losses, val_acc, test_acc, save_path):
     epochs = range(1, len(losses) + 1)
 
-    # 绘制训练损失
+    # Plot training loss
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
     plt.plot(epochs, losses, label='Training Loss')
@@ -366,7 +366,7 @@ def plot_training_results(losses, val_acc, test_acc, save_path):
     plt.title('Training Loss over Epochs')
     plt.legend()
 
-    # 绘制验证和测试准确率
+    # Plot validation and test accuracy
     plt.subplot(1, 2, 2)
     plt.plot(epochs, val_acc, label='Validation Accuracy', color='blue')
     plt.plot(epochs, test_acc, label='Test Accuracy', color='green')
@@ -375,12 +375,12 @@ def plot_training_results(losses, val_acc, test_acc, save_path):
     plt.title('Validation and Test Accuracy over Epochs')
     plt.legend()
 
-    # 保存图像
+    # Save plot
     plt.tight_layout()
     plt.savefig(save_path)
     plt.show()
 
-# 调用绘图函数并保存
+# Call plotting function and save
 plot_training_results(losses, val_acc, test_acc, figure_dir)
 
 

@@ -117,7 +117,7 @@ class Model(torch.nn.Module):
             torch.nn.GELU(),
             torch.nn.Linear(64, 2)
         )
-        if attn_pool:#可选的注意力池化层
+        if attn_pool:#Optional attention pooling layer
             self.rna_pool_query = torch.nn.Parameter(torch.randn(1, 1, 640))
             self.pro_pool_query = torch.nn.Parameter(torch.randn(1, 1, 1280))
             self.rna_pooler = torch.nn.MultiheadAttention(
@@ -136,7 +136,7 @@ class Model(torch.nn.Module):
         # print('pro_hidden:',pro_hidden.shape)
 
         if self.attn_pool:
-            #对rna_hidden进行注意力池化
+            # Apply attention pooling to rna_hidden
             batch_size = rna_hidden.shape[0]
             rna_padding_mask = rna_tokens == self.rna_model.padding_idx
             rna_pk = self.rna_pool_query.repeat(batch_size, 1, 1)
@@ -146,7 +146,7 @@ class Model(torch.nn.Module):
             )
             rna_feat=rna_feat.squeeze(dim=1)
             # print('rna_feat:',rna_feat.shape)
-            #对pro_hidden进行注意力池化
+            # Apply attention pooling to pro_hidden
             pro_padding_mask = pro_tokens == self.pro_model.padding_idx
             pro_pk = self.pro_pool_query.repeat(batch_size, 1, 1)
             # print(f"pro_pk shape: {pro_pk.shape}")
@@ -162,24 +162,24 @@ class Model(torch.nn.Module):
             return self.mlp(feat)
         else:
             hidden = torch.cat([rna_hidden[0], pro_hidden[0]], dim=-1)  # [batch, seq_len+2, 1920]
-            return self.mlp(hidden[:, 0])  # 只使用第一个 token 的表示
+            return self.mlp(hidden[:, 0])  # Use only the first token representation
         
 def train(loader, model, optimizer, rna_converter, pro_converter, device):
     model = model.train()
     losses = []
     for data in tqdm(loader):
-        # 提取 RNA 和 Protein 的序列
+        # Extract RNA and Protein sequences
         rna_strs = [d[0] for d in data]
         pro_strs = [d[1] for d in data]
 
-        # 使用对应的 converter 进行转换
+        # Use corresponding converters for transformation
         _, _, rna_tokens = rna_converter([(None, rna_str) for rna_str in rna_strs])
         _, _, pro_tokens = pro_converter([(None, pro_str) for pro_str in pro_strs])
 
         rna_tokens = rna_tokens.to(device)
         pro_tokens = pro_tokens.to(device)
-        batch_labels = torch.LongTensor([d[2] for d in data]).to(device)  # 获取标签
-        # 将 RNA 和 Protein 的 tokens 作为模型的输入
+        batch_labels = torch.LongTensor([d[2] for d in data]).to(device)  # Get labels
+        # Use RNA and Protein tokens as model input
         results = model((rna_tokens, pro_tokens))
         
         loss = torch.nn.functional.cross_entropy(results, batch_labels)
@@ -195,24 +195,24 @@ def evaluate(loader, model, rna_converter, pro_converter, device):
     model = model.eval()
     y_pred, y_true = [], []
     for data in tqdm(loader):
-        # 提取 RNA 和 Protein 的序列
+        # Extract RNA and Protein sequences
         rna_strs = [d[0] for d in data]
         pro_strs = [d[1] for d in data]
 
-        # 使用对应的 converter 进行转换
+        # Use corresponding converters for transformation
         _, _, rna_tokens = rna_converter([(None, rna_str) for rna_str in rna_strs])
         _, _, pro_tokens = pro_converter([(None, pro_str) for pro_str in pro_strs])
 
         rna_tokens = rna_tokens.to(device)
         pro_tokens = pro_tokens.to(device)
 
-        # 将 RNA 和 Protein 的 tokens 作为模型的输入
+        # Use RNA and Protein tokens as model input
         with torch.no_grad():
             results = model((rna_tokens, pro_tokens))
             # print('results:',results)
             results=results.argmax(dim=-1)
             y_pred.append(results.cpu())
-        y_true.extend([d[2] for d in data])  # 获取标签
+        y_true.extend([d[2] for d in data])  # Get labels
 
     y_true = torch.LongTensor(y_true)
     y_pred = torch.cat(y_pred, dim=0)
@@ -267,12 +267,12 @@ if __name__ == '__main__':
         device = torch.device(f'cuda:{args.device}')
     else:
         device = torch.device('cpu')
-    # #正反应
+    # # Positive interactions
     # pair_file = './dataset/task2_rna_protein_pairs.txt' #proid-rnaname-label
     # rna_sequence_file = './dataset/task2_rna_sequences.txt' #rnaname-rnaseq
     # pro_sequence_file = './dataset/task2_pro_sequences.txt' #proid-proseq
 
-    # #负反应
+    # # Negative interactions
     # non_pair_file = './dataset/task2_nonrna_protein_pairs.txt' #proid-rnaname-label
     # non_rna_sequence_file = './dataset/task2_nonrna_sequences.txt' #rnaname-rnaseq
     # non_pro_sequence_file = './dataset/task2_nonpro_sequences.txt' #proid-proseq
@@ -297,7 +297,7 @@ if __name__ == '__main__':
 
     x_paras = []
     for k, v in allmodel.named_parameters():
-        if k.startswith('pro_model'):#冻结所有的蛋白质模型参数
+        if k.startswith('pro_model'): # Freeze all protein model parameters
             v.requires_grad = False
         if args.disable_layer_rna > 0 and k.startswith('rna_model.embed_tokens'):
             v.requires_grad = False
@@ -367,11 +367,11 @@ if __name__ == '__main__':
         }, Fout, indent=4)
 
 
-# 绘图函数
+# Plotting function
 def plot_training_results(losses, val_acc, test_acc, save_path):
     epochs = range(1, len(losses) + 1)
 
-    # 绘制训练损失
+    # Plot training loss
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
     plt.plot(epochs, losses, label='Training Loss')
@@ -380,7 +380,7 @@ def plot_training_results(losses, val_acc, test_acc, save_path):
     plt.title('Training Loss over Epochs')
     plt.legend()
 
-    # 绘制验证和测试准确率
+    # Plot validation and test accuracy
     plt.subplot(1, 2, 2)
     plt.plot(epochs, val_acc, label='Validation Accuracy', color='blue')
     plt.plot(epochs, test_acc, label='Test Accuracy', color='green')
@@ -389,7 +389,7 @@ def plot_training_results(losses, val_acc, test_acc, save_path):
     plt.title('Validation and Test Accuracy over Epochs')
     plt.legend()
 
-    # 保存图像
+    # Save plot
     plt.tight_layout()
     plt.savefig(save_path)
     plt.show()

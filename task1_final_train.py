@@ -31,7 +31,7 @@ def evaluate(rna_fm_model, mlp_model, data_loader, criterion, device, state='val
     print(state+f" Accuracy: {accuracy * 100:.2f}%, Loss: {val_loss:.4f}")
     return val_loss, accuracy
 
-# 训练步骤
+# Training步骤
 def train(rna_fm_model, mlp_model, train_loader, val_loader, criterion, device):
     rna_fm_model.train()
     mlp_model.train()
@@ -39,7 +39,7 @@ def train(rna_fm_model, mlp_model, train_loader, val_loader, criterion, device):
     optimizer_2 = optim.Adam(rna_fm_model.parameters(), lr=lr_fm)
     optimizer_3 = optim.Adam(mlp_model.parameters(), lr=lr_m2)
 
-    #第一阶段训练：只训练mlp
+    #第一阶段Training：只Trainingmlp
     # 冻结 rna_fm 模型的所有参数
     for param in rna_fm_model.parameters():
         param.requires_grad = False
@@ -79,7 +79,7 @@ def train(rna_fm_model, mlp_model, train_loader, val_loader, criterion, device):
             torch.save(mlp_model.state_dict(), mlp_model_save_path)
             print(f"update Model saved to {mlp_model_save_path}")
 
-    #第二阶段训练：同时训练rna_fm和mlp
+    #第二阶段Training：同时Trainingrna_fm和mlp
     # 冻结 rna_fm 模型的所有参数
     for param in rna_fm_model.parameters():
         param.requires_grad = True
@@ -131,14 +131,14 @@ rna_fm_model = RF(rna_fm_model).to(device)
 mlp_model=MLP(input_dim, hidden_dim_1, hidden_dim_2, output_dim).to(device)
 print("create model sucessfully")
 
-# 加载数据集
+# Load data集
 train_loader,val_loader,test_loader,labels=load_split_data(fasta_file,label_file,alphabet, batch_size,collate_fn)
 print('load data sucessfully')
 
-# 定义损失函数和优化器
+# Define loss function and optimizer
 criterion = nn.CrossEntropyLoss(ignore_index=alphabet.padding_idx)  # 忽略填充标记的损失
 
-# 训练模型
+# Train model
 print('start train')
 s1_train_losses = []
 s1_val_losses = []
@@ -164,7 +164,7 @@ print('end test')
 # 创建一个包含两个子图的图形
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
 
-# 绘制左图 - 阶段1的训练损失和验证损失
+# 绘制左图 - 阶段1的Training损失和验证损失
 color = 'tab:red'
 ax1.set_xlabel('Epochs')
 ax1.set_ylabel('Loss', color=color)
@@ -186,7 +186,7 @@ ax1.legend(lns1, labs1, loc='upper left')
 
 ax1.set_title('Stage 1: Training and Validation Loss and Accuracy')
 
-# 绘制右图 - 阶段2的训练损失和验证损失
+# 绘制右图 - 阶段2的Training损失和验证损失
 color = 'tab:red'
 ax2.set_xlabel('Epochs')
 ax2.set_ylabel('Loss', color=color)

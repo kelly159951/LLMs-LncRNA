@@ -109,37 +109,37 @@ def load_split_data(fasta_file,label_file,alphabet,batch_size=32,collate_fn=coll
     for i in range(len(label_fa)):
         assert label_fa[i]==label_df['Seqname'][i]
     print('name check sucessfully')
-    # 划分训练、验证和测试集：确保测试集和验证集样本数量均衡
+    # 划分Training、验证和测试集：确保测试集和验证集样本数量均衡
     X = sequences
     y = labels  
-    # 统计每个类别的样本数  
+    # 统计每个类别的样本数
     class_counts=pd.Series(labels).value_counts()
     print("总数据中每个类别的RNA个数:\n", class_counts)
     # 确定从每个类别中抽取的样本数
     min_class_samples = min(class_counts)  
     num_samples_per_class = max(1, min_class_samples//3)  
     print('每个类别抽取的样本数:', num_samples_per_class)
-    # 初始化索引列表   
+    # 初始化索引列表
     temp_indices = []  
     train_indices = []  
     
-    # 为每个类别随机选择样本索引  
+    # 为每个类别随机选择样本索引
     for label, count in class_counts.items():  
         class_indices = np.where(labels == label)[0]  
-        np.random.shuffle(class_indices)  # 随机打乱索引  
+        np.random.shuffle(class_indices)  # 随机打乱索引
         temp_indices.extend(class_indices[:num_samples_per_class])  
         train_indices.extend(class_indices[num_samples_per_class:])  
 
-    # 分离出对应的X_temp, y_temp, X_train, y_train  
+    # 分离出对应的X_temp, y_temp, X_train, y_train
     X_temp = [X[i] for i in temp_indices]
     y_temp = [y[i] for i in temp_indices]
     X_train = [X[i] for i in train_indices]
     y_train = [y[i] for i in train_indices]
     
-    # 接下来，将temp集合进一步划分为验证集和测试集  
+    # 接下来，将temp集合进一步划分为验证集和测试集
     X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)  
 
-    # 统计总数据中每个类别的RNA的个数  
+    # 统计总数据中每个类别的RNA的个数
     total_counts = labels.value_counts()  
     print("总数据中每个类别的RNA个数:", total_counts)  
     print('训练集大小：', len(X_train), len(y_train))
@@ -152,7 +152,7 @@ def load_split_data(fasta_file,label_file,alphabet,batch_size=32,collate_fn=coll
     print("验证集中每个类别的RNA个数:\n", val_counts)  
     print("测试集中每个类别的RNA个数:\n", test_counts)
 
-    # 创建数据集  
+    # 创建数据集
     train_dataset = RNADataset(X_train, y_train, alphabet)  
     val_dataset = RNADataset(X_val, y_val, alphabet)  
     test_dataset = RNADataset(X_test, y_test, alphabet)  

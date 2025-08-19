@@ -15,34 +15,34 @@ for s in [1]:
     Afastapath=Afastapaths[s]
     resultpath=resultpath[s]
 
-    # 存储转换后的数据
+    # Store converted data
     converted_data = []
 
-    # 打开并读取文件
+    # Open and read file
     with open(input_file, 'r') as file:
         for line in file:
-            # 去掉行尾的换行符并按制表符拆分
+            # Remove newline characters and split by tabs
             columns = line.strip().split()
             
-            # 获取 seqname 和 label
+            # Get seqname and label
             seqname = columns[1]
             label = columns[2]
             
-            # 构造新的格式：">seqname,label"
+            # Construct new format: ">seqname,label"
             formatted_line = f">{seqname},{label};"
-            converted_data.append([seqname, label])  # 添加 seqname 和 label
+            converted_data.append([seqname, label])  # Add seqname and label
 
-    # 将转换后的数据写入新的 CSV 文件
+    # Write converted data to new CSV file
     with open(output_file, 'w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
         
-        # 写入标题行
+        # Write header row
         csv_writer.writerow(['Seqname', ' Label'])
         
-        # 写入数据行
+        # Write data rows
         csv_writer.writerows(converted_data)
 
-    print(f"转换完成，数据已保存到 {output_file}")
+    print(f"Conversion completed, data saved to {output_file}")
 
 
     
@@ -59,30 +59,30 @@ for s in [1]:
 
 
 
-# 加载并拼接特征
+# Load and concatenate features
 def load_and_concatenate_features(file_paths):
     features = []
     for file in file_paths:
         df = pd.read_csv(file)
-        feature_array = df.values[:, 2:]  # 取编码
+        feature_array = df.values[:, 2:]  # Extract encoding
         features.append(feature_array)
         # print(features)
         names=df.values[:, 1]
     return names,np.hstack(features)
 
-# 保存特征和名称到CSV文件
+# Save features and names to CSV file
 def save_to_csv(names, features, file_path):
     df = pd.DataFrame(features)
     df.insert(0, 'Seqname', names)
     df.to_csv(file_path, index=False)
 
-# 保存特征和名称到NPY文件
+# Save features and names to NPY file
 def save_to_npy(names, features, file_path):
     combined_data = np.column_stack((names, features))
     np.save(file_path, combined_data)
 
 
-# 主函数
+# Main function
 data_set=['pair','non_pair']
 for set in data_set:
     base_path = './task2_rna_encode/'+set+'/encoding_features/'
@@ -93,11 +93,11 @@ for set in data_set:
     file_paths = [base_path + file_name for file_name in file_names]
 
 
-    # 加载并拼接特征
+    # Load and concatenate features
     names,features = load_and_concatenate_features(file_paths)
 
 
-    # 设置保存路径
+    # Set save path
     save_base_path = './task2_rna_encode/'+set+'/combined_features'
     if not os.path.exists(save_base_path):
         os.makedirs(save_base_path)
@@ -105,7 +105,7 @@ for set in data_set:
     csv_path = os.path.join(save_base_path, 'combined_features.csv')
     npy_path = os.path.join(save_base_path, 'combined_features.npy')
 
-    # 保存到不同文件格式
+    # Save to different file formats
     save_to_csv(names, features, csv_path)
     save_to_npy(names, features, npy_path)
 

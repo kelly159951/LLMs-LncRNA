@@ -1,5 +1,10 @@
 import os
-import numpy as np
+from model import *
+from config import *
+
+# # Load data
+data = pd.read_csv(data_path)
+# # Load label data numpy as np
 import pandas as pd
 from tqdm import tqdm
 import torch
@@ -12,28 +17,28 @@ from sklearn.metrics import accuracy_score, classification_report
 from model import *
 from config import *
 
-# # 加载数据
+# # Load data
 # data = pd.read_csv(data_path)
-# # 加载标签数据
+# # Load label data
 # labels_df = pd.read_csv(label_path)
-# labels_df.columns = labels_df.columns.str.strip()  # 去除列名的前空格
-# labels_df['Label'] = labels_df['Label'].str.strip()  # 去除Label列空格
-# labels_df['Label'] = labels_df['Label'].str.replace(';', '')  # 去除；
+# labels_df.columns = labels_df.columns.str.strip()  # Remove leading spaces from column names
+# labels_df['Label'] = labels_df['Label'].str.strip()  # Remove spaces from Label column
+# labels_df['Label'] = labels_df['Label'].str.replace(';', '')  # Remove semicolons
 
-# # 数据标准化
+# # Data standardization
 # scaler = StandardScaler()
 # data_scaled = scaler.fit_transform(data.iloc[:, 1:])
-# # 数据转换为 PyTorch 张量
+# # Convert data to PyTorch tensor
 # data_tensor = torch.tensor(data_scaled, dtype=torch.float32)
-# data_tensor = data_tensor.unsqueeze(1).unsqueeze(3)  # 增加一个维度以匹配 Conv2d 的输入要求
+# data_tensor = data_tensor.unsqueeze(1).unsqueeze(3)  # Add a dimension to match Conv2d input requirements
 
-# # 将标签映射为数字
+# # Map labels to numbers
 # label_mapping = {'Linc': 0, 'Sense No Exonic': 1, 'Antisense': 2, 'Exonic': 3}
 # labels = labels_df['Label'].map(label_mapping).values
-# # 转换为 PyTorch 张量
+# # Convert to PyTorch tensor
 # labels = torch.tensor(labels, dtype=torch.long)
 
-# # 划分训练集和验证集
+# # Split training and validation sets
 # train_size = int(rate_t_v * len(data_tensor))
 # valid_size = len(data_tensor) - train_size
 # train_dataset, valid_dataset = random_split(TensorDataset(data_tensor, labels), [train_size, valid_size])
@@ -44,9 +49,9 @@ from config import *
 
 
 
-# 加载数据
+# Load data
 train_loader,valid_loader,test_loader, labels=load_split_data(data_path,label_path,batch_size=batch_size)
-# 模型初始化
+# Model initialization
 autoencoder = RNAAutoencoder()
 classifier = MLP()
 autoencoder = nn.DataParallel(autoencoder)
@@ -54,16 +59,16 @@ classifier = nn.DataParallel(classifier)
 autoencoder = autoencoder.cuda()
 classifier = classifier.cuda()
 
-# 定义损失函数和优化器
+# Define loss function and optimizer
 criterion_ae = nn.MSELoss()
 criterion_cls = nn.CrossEntropyLoss()
 optimizer = optim.Adam(list(autoencoder.parameters()) + list(classifier.parameters()), lr=lr)
 
-# 训练模型
+# Train model
 best_valid_loss = float('inf')
 best_model = None
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# 先只训练ae，之后同时训练ae和mlp
+# First train only ae, then train ae and mlp together
 for epoch in range(num_epochs_ae):
     autoencoder.train()
     train_loss = 0
@@ -72,11 +77,11 @@ for epoch in range(num_epochs_ae):
     for inputs, labels in tqdm(balenced_train_loader, desc=f'Training Epoch {epoch + 1}/{num_epochs_ae}'):
         inputs = inputs.to(device)
         labels = labels.to(device)
-        optimizer.zero_grad()  # 清空梯度
-        outputs, latent_feature = autoencoder(inputs)  # 前向传播
-        loss= criterion_ae(outputs, inputs)  # 损失函数
-        loss.backward()  # 反向传播
-        optimizer.step()  # 更新模型参数
+        optimizer.zero_grad()  # Clear gradients
+        outputs, latent_feature = autoencoder(inputs)  # Forward propagation
+        loss= criterion_ae(outputs, inputs)  # Loss function
+        loss.backward()  # Backward propagation
+        optimizer.step()  # Update model parameters
         train_loss += loss.item()
     
     autoencoder.eval()
@@ -103,19 +108,19 @@ for epoch in range(num_epochs_aemlp):
     for inputs, labels in tqdm(balenced_train_loader, desc=f'Training Epoch {epoch + 1}/{num_epochs_aemlp}'):
         inputs = inputs.to(device)
         labels = labels.to(device)
-        optimizer.zero_grad()  # 清空梯度
+        optimizer.zero_grad()  # Clear gradients
 
-        outputs, latent_feature = autoencoder(inputs)  # 前向传播
+        outputs, latent_feature = autoencoder(inputs)  # Forward propagation
 
-        loss_ae = criterion_ae(outputs, inputs)  # 损失函数
+        loss_ae = criterion_ae(outputs, inputs)  # Loss function
         # print(outputs)
         predict_outputs = classifier(latent_feature)
         loss_cls = criterion_cls(predict_outputs, labels)
         # print(predict_outputs)
 
         loss = alpha * loss_ae + (1 - alpha) * loss_cls
-        loss.backward()  # 反向传播
-        optimizer.step()  # 更新模型参数
+        loss.backward()  # Backward propagation
+        optimizer.step()  # Update model parameters
 
         train_loss += loss.item()
     
@@ -145,15 +150,15 @@ for epoch in range(num_epochs_aemlp):
     valid_accuracy = accuracy_score(valid_targets, valid_preds)
     print(f'Epoch [{epoch + 1}/{num_epochs_aemlp}], Training Loss: {train_loss:.4f}, Validation Loss: {valid_loss:.4f}, Validation Accuracy: {valid_accuracy:.4f}')
 
-    if valid_loss < best_valid_loss:  # 更新最优模型
+    if valid_loss < best_valid_loss:  # Update best model
         best_valid_loss = valid_loss
         best_model = {'autoencoder': autoencoder.state_dict(), 'classifier': classifier.state_dict()}
 
-# 保存最佳模型
+# Save best model
 os.makedirs(root, exist_ok=True)
 torch.save(best_model, root + '/best_autoencoder_classifier.pth')
 
-# 提取中间嵌入特征
+# Extract intermediate embedding features
 autoencoder.load_state_dict(best_model['autoencoder'])
 autoencoder.eval()
 embeddings = []
@@ -168,7 +173,7 @@ np.save(root + '/embedded_features.npy', embeddings)
 
 print("Training complete and embeddings saved.")
 
-# 加载最佳模型并测试
+# Load best model and test
 autoencoder.load_state_dict(best_model['autoencoder'])
 classifier.load_state_dict(best_model['classifier'])
 autoencoder.eval()
@@ -217,28 +222,28 @@ print(f'Test Classification Accuracy: {accuracy:.4f}')
 
 # from model import *
 # from config import *
-# # 加载数据
+# # Load data
 # data = pd.read_csv(data_path)
-# # 加载标签数据
+# # Load label data
 # labels_df = pd.read_csv(label_path)
-# labels_df.columns = labels_df.columns.str.strip()  # 去除列名的前空格
-# labels_df['Label'] = labels_df['Label'].str.strip()  # 去除Label列空格
-# labels_df['Label'] = labels_df['Label'].str.replace(';', '')  # 去除；
+# labels_df.columns = labels_df.columns.str.strip()  # Remove leading spaces from column names
+# labels_df['Label'] = labels_df['Label'].str.strip()  # Remove spaces from Label column
+# labels_df['Label'] = labels_df['Label'].str.replace(';', '')  # Remove semicolons
 
-# # 数据标准化
+# # Data standardization
 # scaler = StandardScaler()
 # data_scaled = scaler.fit_transform(data.iloc[:, 1:])
-# # 数据转换为 PyTorch 张量
+# # Convert data to PyTorch tensor
 # data_tensor = torch.tensor(data_scaled, dtype=torch.float32)
-# data_tensor = data_tensor.unsqueeze(1).unsqueeze(3)  # 增加一个维度以匹配 Conv2d 的输入要求
+# data_tensor = data_tensor.unsqueeze(1).unsqueeze(3)  # Add a dimension to match Conv2d input requirements
 
-# # 将标签映射为数字
+# # Map labels to numbers
 # label_mapping = {'Linc': 0, 'Sense No Exonic': 1, 'Antisense': 2, 'Exonic': 3}
 # labels = labels_df['Label'].map(label_mapping).values
-# # 转换为 PyTorch 张量
+# # Convert to PyTorch tensor
 # labels = torch.tensor(labels, dtype=torch.long)
 
-# # 划分训练集和验证集
+# # Split training and validation sets
 # train_size = int(rate_t_v * len(data_tensor))
 # valid_size = len(data_tensor) - train_size
 # train_dataset, valid_dataset = random_split(TensorDataset(data_tensor, labels), [train_size, valid_size])
@@ -246,7 +251,7 @@ print(f'Test Classification Accuracy: {accuracy:.4f}')
 # train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 # valid_loader = DataLoader(valid_dataset, batch_size=batch_size, num_workers=num_workers)
 
-# # 模型初始化
+# # Model initialization
 # autoencoder = RNAAutoencoder()
 # classifier = MLP()
 # autoencoder = nn.DataParallel(autoencoder)
@@ -254,16 +259,16 @@ print(f'Test Classification Accuracy: {accuracy:.4f}')
 # autoencoder = autoencoder.cuda()
 # classifier = classifier.cuda()
 
-# # 定义损失函数和优化器
+# # Define loss function and optimizer
 # criterion_ae = nn.MSELoss()
 # criterion_cls = nn.CrossEntropyLoss()
 # optimizer = optim.Adam(list(autoencoder.parameters()) + list(classifier.parameters()), lr=lr)
 
-# # 训练模型
+# # Train model
 # best_valid_loss = float('inf')
 # best_model = None
 # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# #第一个epoch只训练ae，之后同时训练ae和mlp
+# #First epoch only trains ae, then train ae and mlp together
 # for epoch in range(num_epochs):
 #     autoencoder.train()
 #     classifier.train()
@@ -271,11 +276,11 @@ print(f'Test Classification Accuracy: {accuracy:.4f}')
 #     for inputs, labels in tqdm(train_loader, desc=f'Training Epoch {epoch + 1}/{num_epochs}'):
 #         inputs = inputs.to(device)
 #         labels = labels.to(device)
-#         optimizer.zero_grad()# 清空梯度
+#         optimizer.zero_grad()# Clear gradients
 
-#         outputs, latent_feature = autoencoder(inputs)# 前向传播
+#         outputs, latent_feature = autoencoder(inputs)# Forward propagation
 
-#         loss_ae = criterion_ae(outputs, inputs)# 损失函数
+#         loss_ae = criterion_ae(outputs, inputs)# Loss function
 #         if epoch > 0:
 #             predict_outputs = classifier(latent_feature)
 #             loss_cls = criterion_cls(predict_outputs, labels)
@@ -283,8 +288,8 @@ print(f'Test Classification Accuracy: {accuracy:.4f}')
 #             loss_cls = 0
 #         loss = alpha * loss_ae + (1 - alpha) * loss_cls
 
-#         loss.backward()# 反向传播
-#         optimizer.step() # 更新模型参数
+#         loss.backward()# Backward propagation
+#         optimizer.step() # Update model parameters
 
 #         train_loss += loss.item()
     
@@ -312,15 +317,15 @@ print(f'Test Classification Accuracy: {accuracy:.4f}')
 #     print(outputs)
 #     print(f'Epoch [{epoch + 1}/{num_epochs}], Training Loss: {train_loss:.4f}, Validation Loss: {valid_loss:.4f}')
 
-#     if epoch > 0 and valid_loss < best_valid_loss:# 更新最优模型
+#     if epoch > 0 and valid_loss < best_valid_loss:# Update best model
 #         best_valid_loss = valid_loss
 #         best_model = {'autoencoder': autoencoder.state_dict(), 'classifier': classifier.state_dict()}
 
-# # 保存最佳模型
+# # Save best model
 # os.makedirs(root, exist_ok=True)
 # torch.save(best_model, root + '/best_autoencoder_classifier.pth')
 
-# # 提取中间嵌入特征
+# # Extract intermediate embedding features
 # autoencoder.load_state_dict(best_model['autoencoder'])
 # autoencoder.eval()
 # embeddings = []
@@ -335,7 +340,7 @@ print(f'Test Classification Accuracy: {accuracy:.4f}')
 
 # print("Training complete and embeddings saved.")
 
-# # 加载最佳模型并测试
+# # Load best model and test
 # autoencoder.load_state_dict(best_model['autoencoder'])
 # classifier.load_state_dict(best_model['classifier'])
 # autoencoder.eval()

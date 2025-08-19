@@ -3,53 +3,53 @@ import pandas as pd
 from Bio import SeqIO
 from tqdm import tqdm
 
-# 将输入字符串中的所有字母转换为大写，并返回转换后的字符串。
+# Convert all letters in the input string to uppercase and return the converted string.
 def convert_to_uppercase(input_str):
-    # 逐个字符检查并转换为大写
+    # Check each character and convert to uppercase
     result = ''
     for char in input_str:
-        # 如果字符是小写字母，转换为大写
+        # If character is lowercase letter, convert to uppercase
         if 'a' <= char <= 'z':
             result += chr(ord(char) - 32)
         else:
             result += char
     return result
 
-# 定义文件路径
-rna_protein_file = './dataset/RNA-protein_lnc_filter.txt'  # rna-protein关系文件
-noncode_source_file = './dataset/NONCODEv5_source.txt'     # rna 名称-ID
-ncrna_fasta_file = './dataset/ncrna_NONCODEv5.fasta'       # rna ID-序列
-pro_sec_file = './dataset/output_protein.fasta'            # pro 名称-序列
+# Define file paths
+rna_protein_file = './dataset/RNA-protein_lnc_filter.txt'  # rna-protein relationship file
+noncode_source_file = './dataset/NONCODEv5_source.txt'     # rna name-ID
+ncrna_fasta_file = './dataset/ncrna_NONCODEv5.fasta'       # rna ID-sequence
+pro_sec_file = './dataset/output_protein.fasta'            # pro name-sequence
 
-# 加载RNA-蛋白质关系文件
+# Load RNA-protein relationship file
 rna_protein_df = pd.read_csv(rna_protein_file, sep='\t', header=None)
 rna_protein_df.columns = ['id', 'rna_name', 'noncode_id', 'rna_type', 'protein_name', 'protein_id', 'protein_type', 'description', 'method', 'pubmed_id', 'species', 'cell_line', 'interaction_type', 'interaction_mode', 'interaction_subject', 'source']
 
-# 加载NONCODE源文件
+# Load NONCODE source file
 noncode_df = pd.read_csv(noncode_source_file, sep='\t', header=None)
 noncode_df.columns = ['noncode_id', 'source', 'source_id']
 
-# 加载FASTA文件
+# Load FASTA files
 source_rna_sequences = SeqIO.to_dict(SeqIO.parse(ncrna_fasta_file, "fasta"))
 source_pro_sequences = SeqIO.to_dict(SeqIO.parse(pro_sec_file, "fasta"))
 
-# 初始化结果列表
+# Initialize result lists
 triplets = []
 rna_sequences = []
 pro_sequences = []
 missing_info = []
 
-# 遍历RNA-蛋白质关系文件
+# Iterate through RNA-protein relationship file
 for index, row in tqdm(rna_protein_df.iterrows(), total=rna_protein_df.shape[0], desc="Processing RNA-Protein interactions"):
     rna_name = row['rna_name']
     protein_id = row['protein_id']
     
-    # 确保蛋白质存在
+    # Ensure protein exists
     if protein_id == '-':
         missing_info.append(f"{rna_name}\t{protein_id}")
         continue
     
-    # 在NONCODE源文件中查找RNA的ID
+    # Find RNA ID in NONCODE source file
     rna_id = None
     matched_rows = noncode_df[(noncode_df['source'] == rna_name) | (noncode_df['source_id'] == rna_name)]
     
@@ -59,7 +59,7 @@ for index, row in tqdm(rna_protein_df.iterrows(), total=rna_protein_df.shape[0],
         missing_info.append(f"{rna_name}\t{protein_id}")
         continue
     
-    # 在FASTA文件中查找RNA的序列
+    # Find RNA sequence in FASTA file
     if rna_id in source_rna_sequences and protein_id in source_pro_sequences:
         rna_sequence = str(source_rna_sequences[rna_id].seq)
         protein_sequence = str(source_pro_sequences[protein_id].seq)
@@ -69,23 +69,23 @@ for index, row in tqdm(rna_protein_df.iterrows(), total=rna_protein_df.shape[0],
         missing_info.append(f"{rna_name}\t{protein_id}")
         continue
     
-    # 保存三元组
+    # Save triplet
     triplets.append((protein_id, rna_id, 1))
     rna_sequences.append((rna_id, rna_sequence))
     pro_sequences.append((protein_id, protein_sequence))
 
-# 保存结果到文件
+# Save results to files
 triplet_file = './dataset/task2_rna_protein_pairs.txt'
-rna_sequence_file = './dataset/task2_rna_sequences.fasta'  # 修改为FASTA格式
-pro_sequence_file = './dataset/task2_pro_sequences.fasta'  # 修改为FASTA格式
+rna_sequence_file = './dataset/task2_rna_sequences.fasta'  # Modified to FASTA format
+pro_sequence_file = './dataset/task2_pro_sequences.fasta'  # Modified to FASTA format
 missing_info_file = './dataset/task2_missing_info.txt'
 
-# 保存三元组
+# Save triplets
 with open(triplet_file, 'w') as f:
     for triplet in triplets:
         f.write(f"{triplet[0]}\t{triplet[1]}\t{triplet[2]}\n")
 
-# 保存RNAid和序列 (FASTA格式)
+# Save RNA ID and sequences (FASTA format)
 with open(rna_sequence_file, 'w') as f:
     for rna_name, rna_sequence in rna_sequences:
         f.write(f">{rna_name}\n{rna_sequence}\n")

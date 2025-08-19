@@ -115,7 +115,7 @@ def create_log_model(args):
 
 
 def ddp_setup():
-    if "RANK" in os.environ and "LOCAL_RANK" in os.environ:#分布式训练
+    if "RANK" in os.environ and "LOCAL_RANK" in os.environ:#分布式Training
         try:
             torch.distributed.init_process_group(backend='nccl', timeout=datetime.timedelta(hours=2))
             local_rank = int(os.environ["LOCAL_RANK"])
@@ -124,7 +124,7 @@ def ddp_setup():
             return True
         except Exception as e:
             raise RuntimeError(f"Failed to initialize distributed training: {e}")
-    else:#单机训练
+    else:#单机Training
         print("Non-distributed mode. Running on single process.")
         return False
 
